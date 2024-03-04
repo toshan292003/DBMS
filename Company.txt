@@ -1,0 +1,190 @@
+CREATE TABLE EMP3(
+EID VARCHAR(10) PRIMARY KEY,
+NAME VARCHAR2(20),
+ADDRESS VARCHAR2(20),
+GENDER CHAR(1) CHECK(GENDER='M' OR GENDER='F'),
+SALARY NUMBER(6), 
+SUPEREID VARCHAR(10) REFERENCES EMP3(EID) ON DELETE SET NULL,
+DNO NUMBER);
+
+INSERT INTO EMP3 VALUES('E1','Rahul','Mangaluru','M',35000,'E1',NULL);
+INSERT INTO EMP3 VALUES('E2','Sahana','Mangaluru','F',35000,'E1',NULL);
+INSERT INTO EMP3 VALUES('E3','Sagar','Bengaluru','M',35000,'E1',NULL);
+INSERT INTO EMP3 VALUES('E4','Sagarika','Mangaluru','F',35000,'E1',NULL);
+INSERT INTO EMP3 VALUES('E5','Srajan','Mysore','M',600000,'E1',NULL);
+
+-------------------------------------------------------------------------
+
+CREATE TABLE DEPT3
+(DNUM NUMBER PRIMARY KEY, 
+DNAME VARCHAR2(10) ,
+DMGR_ID VARCHAR(10) REFERENCES EMP3 ON DELETE SET NULL,       
+MGR_START_DATE DATE);
+
+OR 
+
+CREATE TABLE DEPT3
+(DNUM NUMBER PRIMARY KEY, 
+DNAME VARCHAR2(10) ,
+DMGR_ID VARCHAR(10),        
+MGR_START_DATE DATE,
+FOREIGN KEY(DMGR_ID) REFERENCES EMP3 ON DELETE SET NULL);
+INSERT INTO DEPT3 VALUES(1,'CSE','E1','2-Nov-2017');
+INSERT INTO DEPT3 VALUES(2,'IOT','E2','2-Nov-2017');
+INSERT INTO DEPT3 VALUES(3,'Accounts','E2','2-Nov-2020');
+INSERT INTO DEPT3 VALUES(4,'ISE','E1','2-Nov-2000');
+INSERT INTO DEPT3 VALUES(5,'Finance','E1','3-Nov-2001');
+
+-----------------------------------------------------------------------
+
+ALTER TABLE EMP3 ADD CONSTRAINT DNO_FK FOREIGN KEY(DNO) REFERENCES DEPT3 ON DELETE SET NULL;
+
+UPDATE EMP3 SET DNO=&DNO where EID=&EID;
+
+SQL> UPDATE EMP3 SET DNO=&DNO where EID=&EID;
+Enter value for dno: 4
+Enter value for eid: 'E1'
+old   1: UPDATE EMP3 SET DNO=&DNO where EID=&EID
+new   1: UPDATE EMP3 SET DNO=4 where EID='E1'
+
+1 row updated.
+
+SQL> UPDATE EMP3 SET DNO=&DNO where EID=&EID;
+Enter value for dno: 1
+Enter value for eid: 'E2'
+old   1: UPDATE EMP3 SET DNO=&DNO where EID=&EID
+new   1: UPDATE EMP3 SET DNO=1 where EID='E2'
+
+1 row updated.
+
+SQL> UPDATE EMP3 SET DNO=&DNO where EID=&EID;
+Enter value for dno: 3
+Enter value for eid: 'E3'
+old   1: UPDATE EMP3 SET DNO=&DNO where EID=&EID
+new   1: UPDATE EMP3 SET DNO=3 where EID='E3'
+
+1 row updated.
+
+SQL> UPDATE EMP3 SET DNO=&DNO where EID=&EID;
+Enter value for dno: 3
+Enter value for eid: 'E4'
+old   1: UPDATE EMP3 SET DNO=&DNO where EID=&EID
+new   1: UPDATE EMP3 SET DNO=3 where EID='E4'
+
+1 row updated.
+
+SQL> UPDATE EMP3 SET DNO=&DNO where EID=&EID;
+Enter value for dno: 3
+Enter value for eid: 'E5'
+old   1: UPDATE EMP3 SET DNO=&DNO where EID=&EID
+new   1: UPDATE EMP3 SET DNO=3 where EID='E5'
+
+-----------------------------------------------------------------------
+
+CREATE TABLE DLOCATION3 
+(DNO REFERENCES DEPT3,
+DLOCATION VARCHAR2(10), 
+PRIMARY KEY(DNO,DLOCATION)); 
+
+INSERT INTO DLOCATION3 VALUES(1,'Mangaluru');
+INSERT INTO DLOCATION3 VALUES(1,'Mysore');
+INSERT INTO DLOCATION3 VALUES(2,'Mangaluru');
+INSERT INTO DLOCATION3 VALUES(3,'Bengaluru');
+INSERT INTO DLOCATION3 VALUES(4,'Mangaluru');
+INSERT INTO DLOCATION3 VALUES(5,'Mangaluru');
+
+--------------------------------------------------------------------------
+
+CREATE TABLE PROJ3
+(PNUM NUMBER(2) PRIMARY KEY,
+PNAME VARCHAR2(20), 
+PLOCATION VARCHAR2(20), 
+DNO NUMBER  REFERENCES DEPT3);
+
+
+INSERT INTO PROJ3 VALUES(1,'IOT','Managluru',1);
+INSERT INTO PROJ3 VALUES(2,'Data Mining','Managluru',1);
+INSERT INTO PROJ3 VALUES(3,'CC','Hubli',3);
+INSERT INTO PROJ3 VALUES(4,'Image processing','Managluru',4);
+INSERT INTO PROJ3 VALUES(5,'Research','Managluru',5);
+
+----------------------------------------------------------------
+
+CREATE TABLE  WORKSON3
+(EID  VARCHAR(10) REFERENCES EMP3,
+PNO   NUMBER(2) REFERENCES PROJ3,
+HOURS NUMBER(5,2), 
+PRIMARY KEY(EID, PNO));
+
+INSERT INTO WORKSON3 VALUES('E1',1,4);
+INSERT INTO WORKSON3 VALUES('E2',1,5);
+INSERT INTO WORKSON3 VALUES('E3',2,4);
+INSERT INTO WORKSON3 VALUES('E4',3,4);
+INSERT INTO WORKSON3 VALUES('E5',5,4);
+
+-----------------------------------------------------------
+CREATE TABLE DEPENDENT3(
+EMPID VARCHAR(10), 
+DEP_NAME VARCHAR(10),
+GENDER VARCHAR(8),
+BDATE DATE,
+RELATIONSHIP VARCHAR(8),
+PRIMARY KEY(EMPID, DEP_NAME), 
+FOREIGN KEY (EMPID) REFERENCES EMP3(EID) ON DELETE CASCADE);
+
+INSERT INTO DEPENDENT3 VALUES('E1','AKSHAY', 'M','23-APR-2021','SON');
+INSERT INTO DEPENDENT3 VALUES('E2','TEJA', 'F','21-JAN-2021','DAUGHTER');
+
+
+QUERY 1:
+Make a list of all project numbers for projects that involve an employee whose name is “Rahul”, either as a worker or as a manager of the department that controls the project.
+
+SELECT PNO FROM 
+WORKSON W,EMPLOYEE E
+WHERE E.EID = W.EID AND 
+NAME = 'RAHUL'
+UNION ALL
+SELECT PNUM
+FROM EMPLOYEE E,DEPARTMENT D,PROJECT P
+WHERE E.EID = D.DMGR_ID
+AND DNUM = P.DNO AND NAME = 'RAHUL';
+
+
+QUERY2:
+Show the resulting salaries if every employee working on the ‘IoT’ project is given a 10 percent raise.
+
+SEELCT EID , NAME , SALARY, SALARY + 0.1*SALARY AS UPDATED_SALARY
+FROM EMPLOYEE
+WHERE EID IN (
+    SELECT EID FROM WORKSON WHERE PNO IN (
+        SELECT PNUM FROM PROJECT WHERE PNAME = 'IOT'));
+
+
+QUERY3:
+Find the sum of the salaries of all employees of the ‘Accounts’ department, as well as the maximum salary, the minimum salary, and the average salary in this department.
+
+SEELCT SUM(SALARY), AVG(SALARY) , MAX(SALARY), MIN(SALARY) FROM
+EMPLOYEE E, DEPARTMENT D
+WHERE D.DNUM = E.DNO AND DNAME = 'ACCOUNTS';
+
+
+QUERY4:
+Retrieve the name of each employee who works on all the projects controlled by department number 5 (use NOT EXISTS operator).
+
+SELECT E.EID,NAME,PNO,P.DNO FROM 
+EMPLOYEE E, PROJECT P, WORKSON W
+WHERE P.PNUM = W.PNO AND 
+W.EID = E.EID
+AND P.DNO = 5;
+
+
+QUERY5:
+Create a view Dept_info that gives details of department name, Number of employees and total salary of each department.
+
+CREATE VIEW DEPT_INFO AS (
+    SELECT DNAME,COUNT(*) AS NO_OF_EMP,
+    SUM(SALARY) AS SUM_SAL
+    FROM EMPLOYEE E, DEPARTMENT D
+    WHERE DNUM = DNO
+    GROUP BY (DNAME)
+);
